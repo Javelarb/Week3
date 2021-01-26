@@ -1,0 +1,113 @@
+---
+title: "Week3"
+author: "Julio Avelar-Barragan"
+date: "1/26/2021"
+output: html_document
+---
+
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = T)
+```
+
+```{r}
+library(printr)
+library(dplyr)
+library(dbplyr)
+library(reticulate)
+
+setwd("/media/julio/Storage/ecoevo283/Week3/")
+
+data(mtcars)
+#help(mtcars)
+head(mtcars)
+```
+
+```{r}
+aggregate(mpg ~ cyl, data=mtcars, mean)
+```
+
+```{r}
+aggregate(mpg ~ cyl + gear, data=mtcars, mean)
+```
+
+```{r}
+results = mtcars %>%
+    group_by(cyl) %>%
+    summarise(mean_mpg = mean(mpg))
+results
+```
+
+```{r}
+results = mtcars %>%
+    group_by(cyl, gear) %>%
+    summarise(mean_mpg = mean(mpg))
+as.data.frame(results)
+```
+
+```{r}
+# Create a connection ("con") to a database file:
+con <- DBI::dbConnect(RSQLite::SQLite(), "mtcars.sqlite3")
+# Write our data frame to the database in a table called "mtcars"
+DBI::dbWriteTable(con, "mtcars", mtcars)
+# Disconnect from our database
+DBI::dbDisconnect(con)
+```
+
+```{sh}
+ls -lh
+```
+
+```{r}
+con <- DBI::dbConnect(RSQLite::SQLite(), "mtcars.sqlite3")
+mtcars2 <- tbl(con, "mtcars")
+g = mtcars2 %>% 
+    group_by(cyl) %>%
+    summarise(mean_mpg=mean(mpg))
+g %>% show_query()
+```
+
+```{r}
+result = g %>% collect()
+as.data.frame(result)
+```
+
+```{python}
+mtcars = r.mtcars
+mtcars.head()
+```
+
+```{python}
+mtcars.groupby(['cyl'])['mpg'].mean()
+```
+
+```{python}
+mtcars.groupby(['cyl', 'gear'])['mpg'].mean()
+```
+
+```{python}
+import sqlite3 # Built into the Python language!
+con = sqlite3.connect("mtcars_from_pandas.sqlite3")
+# Add our data frame to the mtcars table in the database
+mtcars.to_sql("mtcars", con)
+con.close()
+```
+
+```{sh}
+ls -lh
+```
+
+```{python}
+import pandas as pd
+
+con = sqlite3.connect("mtcars_from_pandas.sqlite3")
+df = pd.read_sql("select * from mtcars", con)
+df.head()
+```
+
+```{python}
+df = pd.read_sql("select cyl, avg(mpg) from mtcars group by cyl", con)
+df.head()
+
+df = pd.read_sql("select cyl, gear, avg(mpg) from mtcars group by cyl, gear", con)
+df.head()
+```
